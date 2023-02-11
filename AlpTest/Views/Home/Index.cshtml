@@ -1,0 +1,159 @@
+﻿@model AlpTest.Models.Bitcoin
+
+@{
+    ViewData["Title"] = "Bitcoin Price";
+}
+
+@section Scripts{
+    <script>
+        $(function() {
+            var coins = [{ time: @Json.Serialize(Model.currentTime), usd: @Json.Serialize(Model.valueUSD), gbp: @Json.Serialize(Model.valueGBP), eur: @Json.Serialize(Model.valueEUR), czk: @Json.Serialize(Model.valueCZK) }];
+            var dps = [{ x: new Date(Date.parse(coins[0].time)), y: coins[0].czk }];
+            var chart = new CanvasJS.Chart("chartContainer", {
+	            title :{
+                    text: "Bitcoin price in time (tracking for an hour)"
+	            },
+                axisX: {
+                    minimum: new Date(Date.parse(coins[0].time)),
+                    valueFormatString: "H-mm",
+                    labelAngle: -50
+                },
+                axisY: {
+                    title: "CZK",
+                    valueFormatString: "#,###"
+                },
+	            data: [{
+		            type: "line",
+		            dataPoints: dps
+	            }]
+            });
+            chart.render();
+            setInterval(function(){
+                var formData = new FormData();
+                var url = '@Url.Action("UpdateBitcoin", "Home")';
+                $.ajax({
+                    type: 'GET',
+                    url: url,
+                    contentType: false,
+                    processData: false,
+                    cache: false,
+                    data: formData,
+                    success: function (bitcoin) {
+                        if (bitcoin.time != coins[ coins.length-1 ].time ) {
+                           let d = new Date(Date.parse(bitcoin.time));
+                           $("#time").text(d.toLocaleDateString() + " " + d.toLocaleTimeString());
+                           $("#usd").text(bitcoin.usd.toLocaleString());
+                           $("#gbp").text(bitcoin.gbp.toLocaleString());
+                           $("#eur").text(bitcoin.eur.toLocaleString());
+                           $("#czk").text(bitcoin.czk.toLocaleString());                           
+                           updateCoins(bitcoin);
+                        }                        
+                    },
+                    error: errorCallback
+                });
+            },10000);
+            function errorCallback() {
+                alert("Some error");
+            }
+            function updateCoins(bitcoin) {
+                coins.push(bitcoin);
+                var t = new Date(Date.parse(bitcoin.time));
+                dps.push({ x: t, y: bitcoin.czk } );                
+                if (dps.length > 60) {
+                    dps.shift();
+                    chart.options.axisX.minimum = dps[0].x;
+                }
+                chart.render();
+                var newLine = "<tr><td>" + t.toLocaleDateString() + " " + t.toLocaleTimeString() + "</td><td>" + bitcoin.usd.toLocaleString() + "</td><td>" + bitcoin.gbp.toLocaleString() + "</td><td>" + bitcoin.eur.toLocaleString() + "</td><td>" + bitcoin.czk.toLocaleString() + "</td></tr>";
+                $("table tbody").append(newLine);
+            }
+        });
+    </script>
+}
+<div>
+    <h4>Bitcoin Price</h4>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.currentTime)
+        </dt>
+        <dd class="col-sm-10" id="time">
+            @Html.DisplayFor(model => model.currentTime)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.disclaimer)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.disclaimer)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.valueUSD)
+        </dt>
+        <dd class="col-sm-10" id="usd">
+            @Html.DisplayFor(model => model.valueUSD)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.valueGBP)
+        </dt>
+        <dd class="col-sm-10" id="gbp">
+            @Html.DisplayFor(model => model.valueGBP)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.valueEUR)
+        </dt>
+        <dd class="col-sm-10" id="eur">
+            @Html.DisplayFor(model => model.valueEUR)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.valueCZK)
+        </dt>
+        <dd class="col-sm-10" id="czk">
+            @Html.DisplayFor(model => model.valueCZK)
+        </dd>
+    </dl>
+</div>
+<hr />
+<div id="chartContainer" style="height: 370px; width:100%;"></div>
+<hr />
+<div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    Time of the sample
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.valueUSD)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.valueGBP)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.valueEUR)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.valueCZK)
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    @Html.DisplayFor(model => model.currentTime)
+                </td>
+                <td>
+                    @Html.DisplayFor(model => model.valueUSD)
+                </td>
+                <td>
+                    @Html.DisplayFor(model => model.valueGBP)
+                </td>
+                <td>
+                    @Html.DisplayFor(model => model.valueEUR)
+                </td>
+                <td>
+                    @Html.DisplayFor(model => model.valueCZK)
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
